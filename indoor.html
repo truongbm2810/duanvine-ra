@@ -411,16 +411,21 @@
         </div>
     </div>
 
-    <script>
+<script>
         window.addEventListener('message', function(event) {
             const eraData = event.data;
             if (!eraData) return;
 
-            // KIỂU 1: Nhận diện gói cấu trúc Object gán chân đơn lẻ (.pin / .value)
-            if (eraData.pin === 'V1' && eraData.value !== undefined) updateTemp(eraData.value);
-            if (eraData.pin === 'V2' && eraData.value !== undefined) updateHumi(eraData.value);
+            console.log("Dữ liệu nhận từ E-Ra:", eraData);
 
-            // KIỂU 2: Nhận diện gói JSON cụm đối tượng gồm nhiều chân đồng thời
+            // KIỂU 1: E-Ra truyền gói tin đơn lẻ dạng Object chứa .pin và .value
+            if (eraData.pin !== undefined && eraData.value !== undefined) {
+                let pinName = String(eraData.pin).toUpperCase();
+                if (pinName === 'V1') updateTemp(eraData.value);
+                if (pinName === 'V2') updateHumi(eraData.value);
+            }
+
+            // KIỂU 2: E-Ra truyền dạng cụm Object nhiều chân {V1: 30.3, V2: 69.1}
             if (typeof eraData === 'object') {
                 if (eraData.V1 !== undefined) updateTemp(eraData.V1);
                 if (eraData.V2 !== undefined) updateHumi(eraData.V2);
@@ -429,25 +434,29 @@
             }
         });
 
-        // Hàm gán giá trị Nhiệt độ và giữ nguyên định dạng tag span °C cũ
+        // Hàm cập nhật Nhiệt độ tự động tìm theo ID hoặc class giao diện
         function updateTemp(val) {
-            const tempElement = document.getElementById('indoor-temp');
-            if (tempElement && val !== null && val !== undefined) {
-                let num = parseFloat(val);
-                if (!isNaN(num)) {
-                    tempElement.innerHTML = num.toFixed(1) + "<span>°C</span>";
-                }
+            if (val === null || val === undefined) return;
+            let num = parseFloat(val);
+            if (isNaN(num)) return;
+            
+            // Tìm theo ID trước, nếu không thấy sẽ tìm theo cấu trúc class của ô Nhiệt độ
+            const tempElement = document.getElementById('indoor-temp') || document.querySelector('.icon-temp').closest('.card').querySelector('.card-value');
+            if (tempElement) {
+                tempElement.innerHTML = num.toFixed(1) + "<span>°C</span>";
             }
         }
 
-        // Hàm gán giá trị Độ ẩm và giữ nguyên định dạng tag span % cũ
+        // Hàm cập nhật Độ ẩm tự động tìm theo ID hoặc class giao diện
         function updateHumi(val) {
-            const humiElement = document.getElementById('indoor-humi');
-            if (humiElement && val !== null && val !== undefined) {
-                let num = parseFloat(val);
-                if (!isNaN(num)) {
-                    humiElement.innerHTML = num.toFixed(1) + "<span>%</span>";
-                }
+            if (val === null || val === undefined) return;
+            let num = parseFloat(val);
+            if (isNaN(num)) return;
+            
+            // Tìm theo ID trước, nếu không thấy sẽ tìm theo cấu trúc class của ô Độ ẩm
+            const humiElement = document.getElementById('indoor-humi') || document.querySelector('.icon-humi').closest('.card').querySelector('.card-value');
+            if (humiElement) {
+                humiElement.innerHTML = num.toFixed(1) + "<span>%</span>";
             }
         }
     </script>

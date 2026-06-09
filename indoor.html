@@ -14,8 +14,6 @@
             --text-light: #fcfcfd;
             --text-muted: #64748b;
             --border-color: rgba(255, 255, 255, 0.03);
-            
-            /* Màu sắc đại diện từng phân khu dữ liệu */
             --color-temp: #ef4444; 
             --color-humi: #3b82f6; 
             --color-light: #eab308; 
@@ -31,7 +29,6 @@
             box-sizing: border-box;
         }
 
-        /* --- CẤU TRÚC LƯỚI RESPONSIVE --- */
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -39,7 +36,6 @@
             margin-bottom: 20px;
         }
 
-        /* --- THEME THẺ GIÁM SÁT (CARD) --- */
         .card {
             background-color: var(--bg-card);
             border: 1px solid var(--border-color);
@@ -48,12 +44,6 @@
             position: relative;
             overflow: hidden;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
         }
 
         .card-header {
@@ -83,7 +73,6 @@
             background-color: rgba(255, 255, 255, 0.02);
         }
 
-        /* Đóng gói giá trị số lớn nằm chính giữa */
         .card-value {
             font-size: 38px;
             font-weight: 600;
@@ -99,7 +88,6 @@
             color: var(--text-muted);
         }
 
-        /* Hình nền mờ nghệ thuật phía dưới góc thẻ */
         .card-watermark {
             position: absolute;
             bottom: -15px;
@@ -107,19 +95,13 @@
             font-size: 90px;
             opacity: 0.03;
             pointer-events: none;
-            transition: opacity 0.2s ease;
-        }
-        .card:hover .card-watermark {
-            opacity: 0.05;
         }
 
-        /* --- ĐỊNH DẠNG MÀU SẮC RIÊNG CHO TỪNG THEO DÕI --- */
         .card.temperature .card-icon { color: var(--color-temp); background-color: rgba(239, 68, 68, 0.08); }
         .card.humidity .card-icon { color: var(--color-humi); background-color: rgba(59, 130, 246, 0.08); }
         .card.light .card-icon { color: var(--color-light); background-color: rgba(234, 179, 8, 0.08); }
         .card.gas .card-icon { color: var(--color-gas); background-color: rgba(16, 185, 129, 0.08); }
 
-        /* --- THẺ CẢNH BÁO AN TOÀN TRẠNG THÁI --- */
         .status-list {
             display: flex;
             flex-direction: column;
@@ -137,11 +119,6 @@
             border: 1px solid rgba(255, 255, 255, 0.02);
         }
 
-        .status-label {
-            font-size: 13px;
-            color: var(--text-light);
-        }
-
         .status-badge {
             font-size: 12px;
             font-weight: 500;
@@ -152,19 +129,9 @@
             gap: 6px;
         }
 
-        .status-badge.safe {
-            background-color: rgba(16, 185, 129, 0.12);
-            color: #10b981;
-        }
+        .status-badge.safe { background-color: rgba(16, 185, 129, 0.12); color: #10b981; }
+        .dot { width: 6px; height: 6px; border-radius: 50%; background-color: currentColor; }
 
-        .dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background-color: currentColor;
-        }
-
-        /* --- BLOCK THÔNG TIN THIẾT BỊ DƯỚI ĐÁY --- */
         .footer-bar {
             background-color: var(--bg-card);
             border: 1px solid var(--border-color);
@@ -173,23 +140,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-
-        .info-group {
-            display: flex;
-            gap: 32px;
-        }
-
-        .info-item {
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        .info-item strong {
-            color: var(--text-light);
-            font-weight: 500;
         }
 
         .hardware-badge {
@@ -199,7 +149,6 @@
             border-radius: 8px;
             font-size: 11px;
             font-weight: 600;
-            letter-spacing: 0.5px;
             display: flex;
             align-items: center;
             gap: 6px;
@@ -209,7 +158,6 @@
 <body>
 
     <div class="dashboard-grid">
-        
         <div class="card temperature">
             <div class="card-header">
                 <div>
@@ -254,74 +202,47 @@
                 </div>
                 <i class="la la-shield-alt card-icon"></i>
             </div>
-            
             <div class="status-list">
-                <div class="status-item">
-                    <span class="status-label">Cảm biến hiện diện</span>
-                    <span class="status-badge safe"><span class="dot"></span>Có người</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Rò rỉ khí Gas (Tuya)</span>
-                    <span class="status-badge safe"><span class="dot"></span>An toàn</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Cảm biến khói</span>
-                    <span class="status-badge safe"><span class="dot"></span>An toàn</span>
-                </div>
+                <div class="status-item"><span class="status-label">Cảm biến hiện diện</span><span class="status-badge safe"><span class="dot"></span>Có người</span></div>
+                <div class="status-item"><span class="status-label">Rò rỉ khí Gas</span><span class="status-badge safe"><span class="dot"></span>An toàn</span></div>
             </div>
         </div>
-
     </div>
 
     <div class="footer-bar">
-        <div class="info-group">
-            <div class="info-item">Bộ thu thập dữ liệu: <strong>ESP32 NodeMCU</strong></div>
-            <div class="info-item">Giao thức đám mây: <strong>E-Ra MQTT Server</strong></div>
-            <div class="info-item">Chu kỳ quét: <strong>2 giây / lần</strong></div>
-        </div>
-        <div class="hardware-badge">
-            <span style="width: 6px; height: 6px; background-color: #10b981; border-radius: 50%;"></span>
-            HARDWARE ONLINE
-        </div>
+        <div style="font-size: 12px; color: var(--text-muted);">Bộ thu thập dữ liệu: <strong>ESP32 API Mode</strong></div>
+        <div class="hardware-badge"><span style="width:6px; height:6px; background-color:#10b981; border-radius:50%;"></span>DATA CONNECTED</div>
     </div>
 
     <script>
-    window.addEventListener('message', function(event) {
-        const eraData = event.data;
-        if (!eraData) return;
+        // Token thiết bị của bạn lấy từ mã nguồn Arduino
+        const AUTH_TOKEN = "b170b92f-10d6-41b8-861f-13bec2fc3688";
 
-        // DÒNG KIỂM TRA: In toàn bộ dữ liệu nhận được ra tab Console của F12
-        console.log("Dữ liệu nhận được từ E-Ra:", eraData);
+        function fetchDataFromEra() {
+            // Gọi API lấy giá trị chân V1 (Nhiệt độ)
+            fetch(`https://e-ra.io/api/v1/dashboard/realtime/virtual/get?token=${AUTH_TOKEN}&pin=V1`)
+                .then(response => response.json())
+                .then(data => {
+                    if(data && data.value !== undefined) {
+                        document.getElementById('indoor-temp').innerHTML = parseFloat(data.value).toFixed(1) + "<span>°C</span>";
+                    }
+                })
+                .catch(err => console.error("Lỗi lấy V1:", err));
 
-        // KIỂU 1: Gói tin update đơn lẻ
-        if (eraData.type === 'UPDATE_VIRTUAL_PIN' || eraData.pin) {
-            if (eraData.pin === 'V1') updateTemp(eraData.value);
-            if (eraData.pin === 'V2') updateHumi(eraData.value);
-        } 
-        
-        // KIỂU 2: Gói tin dạng JSON cụm đối tượng
-        if (typeof eraData === 'object') {
-            if (eraData.V1 !== undefined) updateTemp(eraData.V1);
-            if (eraData.V2 !== undefined) updateHumi(eraData.V2);
-            if (eraData.v1 !== undefined) updateTemp(eraData.v1);
-            if (eraData.v2 !== undefined) updateHumi(eraData.v2);
+            // Gọi API lấy giá trị chân V2 (Độ ẩm)
+            fetch(`https://e-ra.io/api/v1/dashboard/realtime/virtual/get?token=${AUTH_TOKEN}&pin=V2`)
+                .then(response => response.json())
+                .then(data => {
+                    if(data && data.value !== undefined) {
+                        document.getElementById('indoor-humi').innerHTML = parseFloat(data.value).toFixed(1) + "<span>%</span>";
+                    }
+                })
+                .catch(err => console.error("Lỗi lấy V2:", err));
         }
-    });
 
-    function updateTemp(val) {
-        const tempElement = document.getElementById('indoor-temp');
-        if (tempElement) {
-            tempElement.innerHTML = parseFloat(val).toFixed(1) + "<span>°C</span>";
-        }
-    }
-
-    function updateHumi(val) {
-        const humiElement = document.getElementById('indoor-humi');
-        if (humiElement) {
-            humiElement.innerHTML = parseFloat(val).toFixed(1) + "<span>%</span>";
-        }
-    }
-</script>
-
+        // Tự động quét lấy dữ liệu mới mỗi 2 giây (2000 mili giây)
+        fetchDataFromEra();
+        setInterval(fetchDataFromEra, 2000);
+    </script>
 </body>
 </html>

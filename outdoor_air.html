@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outdoor Air & Weather Station Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/line-awesome/1.3.0/line-awesome/css/line-awesome.min.css">
+    
+    <style>
+        :root {
+            --bg-body: #161a20;
+            --bg-card: #22272e;
+            --bg-card-hover: #2b3038;
+            --text-main: #fcfcfd;
+            --text-secondary: #94a3b8;
+            --primary-accent: #3b82f6;
+            --weather-accent: #38bdf8; /* Tông màu xanh trời khí tượng */
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow: hidden;
+        }
+
+        /* --- TIÊU ĐỀ LỚN KHU VỰC --- */
+        .page-header {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .page-header h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: 0.5px; }
+        .page-header p { margin: 4px 0 0 0; font-size: 13px; color: var(--text-secondary); }
+
+        /* --- LƯỚI GRID MAIN CHỨA CARD --- */
+        .weather-grid {
+            flex: 9;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        /* --- THẺ WIDGET CẢM BIẾN --- */
+        .card-widget {
+            background-color: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            transition: background-color 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            height: 100%;
+            border: 1px solid rgba(56, 189, 248, 0.04); /* Viền mờ đồng bộ trạm ngoài trời */
+        }
+        .card-widget:hover { 
+            background-color: var(--bg-card-hover);
+            border-color: rgba(56, 189, 248, 0.15);
+        }
+
+        .widget-top { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start; 
+            z-index: 2; 
+            width: 100%;
+        }
+        .card-widget .title { margin: 0; font-size: 16px; font-weight: 600; color: var(--text-main); }
+        .card-widget .subtitle-tag { font-size: 12px; color: var(--text-secondary); margin: 4px 0 0 0; }
+
+        /* Khối hiển thị số - Đẩy vào chính giữa tâm card */
+        .value-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2;
+            margin-top: -10px;
+        }
+
+        .card-widget .sensor-value {
+            font-family: 'Montserrat', sans-serif;
+            font-size: clamp(45px, 5.5vh, 64px); /* Phóng to cỡ số siêu to */
+            font-weight: 700;
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        .card-widget .sensor-unit { 
+            font-size: 22px; 
+            font-weight: 500; 
+            color: var(--text-secondary); 
+            margin-left: 8px; 
+        }
+
+        /* Định cấu trúc căn giữa riêng cho cụm Hướng Gió hỗn hợp */
+        .wind-direction-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            width: 100%;
+        }
+        .wind-dir-text {
+            font-family: 'Poppins', sans-serif;
+            font-size: clamp(28px, 3.8vh, 40px);
+            font-weight: 700;
+            color: var(--text-main);
+        }
+        .wind-dir-degree {
+            font-family: 'Montserrat', sans-serif;
+            font-size: clamp(32px, 4vh, 46px);
+            font-weight: 700;
+            color: var(--weather-accent);
+        }
+
+        /* Màu sắc định danh Icon */
+        .card-widget i { font-size: 24px; }
+        .card-widget i.la-thermometer-three-quarters { color: #ef4444; } /* Đỏ nhiệt độ */
+        .card-widget i.la-water { color: #38bdf8; }                      /* Xanh độ ẩm */
+        .card-widget i.la-cloud-sun { color: #a7f3d0; }                  /* Áp suất khí quyển */
+        .card-widget i.la-cloud-showers-heavy { color: #60a5fa; }         /* Lượng mưa */
+        .card-widget i.la-wind { color: #cbd5e1; }                       /* Tốc độ gió */
+        .card-widget i.la-compass { color: #fb923c; }                    /* Hướng gió */
+        .card-widget i.la-sun { color: #f59e0b; }                        /* Bức xạ mặt trời */
+
+        /* Họa tiết ảnh chìm SVG */
+        .widget-illustration {
+            position: absolute;
+            right: 20px;
+            bottom: 16px;
+            width: clamp(70px, 9vh, 110px);
+            height: clamp(70px, 9vh, 110px);
+            opacity: 0.12;
+            stroke: var(--weather-accent);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            pointer-events: none;
+        }
+        .card-widget:hover .widget-illustration { opacity: 0.25; transform: scale(1.05); }
+
+
+        /* --- BANNER PHẦN CỨNG Ở ĐÁY MÀN HÌNH --- */
+        .gateway-banner {
+            flex: 2.2;
+            background: linear-gradient(135deg, #1e2530 0%, #22272e 100%);
+            border-radius: 16px;
+            padding: 24px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border: 1px solid rgba(59, 130, 246, 0.1);
+        }
+        .gateway-header { display: flex; justify-content: space-between; align-items: center; }
+        .gateway-status {
+            display: flex; align-items: center; gap: 8px;
+            background-color: rgba(16, 185, 129, 0.1); color: #10b981;
+            padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500;
+        }
+        .gateway-details { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+        .gw-item { font-size: 14px; color: var(--text-secondary); }
+        .gw-item strong { color: var(--text-main); font-family: 'Montserrat', sans-serif; }
+
+        @media (max-width: 1024px) {
+            .weather-grid { grid-template-columns: repeat(2, 1fr); grid-template-rows: auto; }
+            .gateway-details { grid-template-columns: repeat(2, 1fr); }
+            body { overflow-y: auto; height: auto; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="page-header">
+        <h2>II. KHU VỰC NGOÀI TRỜI</h2>
+        <p>Hệ thống đo lường trạm thời tiết tự động kết nối Modbus RTU RS485</p>
+    </div>
+
+    <div class="weather-grid">
+        
+        <div class="card-widget">
+            <div class="widget-top">
+                <div>
+                    <h4 class="title">Nhiệt Độ Ngoài Trời</h4>
+                    <p class="subtitle-tag">Renke Weather Station</p>
+                </div>
+                <i class="la la-thermometer-three-quarters"></i>
+            </div>
+            <div class="value-container">
+                <div class="sensor-value" id="out-temp">32.8<span class="sensor-unit">°C</span></div>
+            </div>
+            <svg class="widget-illustration" viewBox="0 0 24 24" fill="none" stroke-width="1.2"><path d="M12 2v20M17 5H7M15 11H9M13 17H11"/></svg>
+        </div>
+
+        <div class="card-widget">
+            <div class="widget-top">
+                <div>
+                    <h4 class="title">Độ Ẩm Ngoài Trời</h4>
+                    <p class="subtitle-tag">Renke Weather Station</p>
+                </div>
+                <i class="la la-water"></i>
+            </div>
+            <div class="value-container">
+                <div class="sensor-value" id="out-humi">75.2<span class="sensor-unit">%</span></div>
+            </div>
+            <svg class="widget-illustration" viewBox="0 0 24 24" fill="none" stroke-width="1.2"><path d="M12 22a7 7 0 0 0 7-7c0-4.3-7-13-7-13S5 11 5 15a7 7 0 0 0 7 7z"/></svg>
+        </div>
+
+        <div class="card-widget">
+            <div class="widget-top">
+                <div>
+                    <h4 class="title">Áp Suất Khí Quyển</h4>
+                    <p class="subtitle-tag">Barometer Sensor</p>
+                </div>
+                <i class="la la-cloud-sun"></i>
+            </div>
+            <div class="value-container">
+                <div class="sensor-value" id="out-baro" style="font-size: clamp(38px, 4.8vh, 54px);">1011.5<span class="sensor-unit">mbar</span></div>
+            </div>
+            <svg class="widget-illustration" viewBox="0 0 24 24" fill="none" stroke-width="1.2"><circle cx="12" cy="12" r="7"/><path d="M12 8v4l3 3"/></svg>
+        </div>
+
+        <div class="card-widget">
+            <div class="widget-top">
+                <div>
+                    <h4 class="title">Lượng Mưa tích lũy</h4>
+                    <p class="subtitle-tag">Renke Tipping Bucket</p>
+                </div>
+                <i class="la la-cloud-showers-heavy"></i>
+            </div>
+            <div class="value-container">
+                <div class="sensor-value" id="out-rain">12.4<span class="sensor-unit">mm</span></div>
+            </div>
+            <svg class="widget-illustration" viewBox="0 0 24 24" fill="none" stroke-width="1.2"><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25M8 20v2M12 20v2M16 20v2"/></svg>
+        </div>
+
+        <div class="card-widget">
+            <div class="widget-top">
+                <div>
+                    <h4 class="title">Tốc Độ Gió</h4>
+                    <p class="subtitle-tag">Anemometer Sensor</p>
+                </div>
+                <i class="la la-wind"></i>
+            </div>
+            <div class="value-container">
+                <div class="sensor-value" id="out-wind-speed">2.4<span class="sensor-unit">m/s</span></div>
+            </div>
+            <svg class="widget-illustration" viewBox="0 0 24 24" fill="none" stroke-width="1.2"><path d="M2 10h15a3 3 0 1 0-3-3M2 14h19a3 3 0 1 1-3 3M2 18h11a3 3 0 1 0-3-3"/></svg>
+        </div>
+
+        <div class="card-widget">
+            <div class="widget-top">
+                <div>
+                    <h4 class="title">Hướng Gió</h4>
+                    <p class="subtitle-tag">Wind Vane (Góc/Hướng)</p>
+                </div>
+                <i class="la la-compass"></i>
+            </div>
+            <div class="value-container">
+                <div class="wind-direction-container">
+                    <span class="wind-dir-text" id="out-wind-dir">Đông Nam</span>
+                    <span class="wind-dir-degree" id="out-wind-deg">135<span style="font-size:18px; vertical-align:super;">°</span></span>
+                </div>
+            </div>
+            <svg class="widget-illustration" viewBox="0 0 24 24" fill="none" stroke-width="1.2"><circle cx="12" cy="12" r="10"/><path d="M12 2v4M12 18v4M2 12h4M18 12h2M12 6l3 6-3 6-3-6z"/></svg>
+        </div>
+
+        <div class="card-widget" style="grid-column: span 2;">
+            <div class="widget-top">
+                <div>
+                    <h4 class="title">Bức Xạ Mặt Trời</h4>
+                    <p class="subtitle-tag">Pyranometer Solar Radiation</p>
+                </div>
+                <i class="la la-sun"></i>
+            </div>
+            <div class="value-container">
+                <div class="sensor-value" id="out-solar">650.8<span class="sensor-unit">W/m²</span></div>
+            </div>
+            <svg class="widget-illustration" style="width: 90px;" viewBox="0 0 24 24" fill="none" stroke-width="1.2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        </div>
+
+    </div>
+
+    <div class="gateway-banner">
+        <div class="gateway-header">
+            <div>
+                <h4 class="title" style="color: var(--primary-accent); font-weight: 600; font-size: 15px; margin:0;">BỘ THU THẬP DỮ LIỆU TRẠM THỜI TIẾT TỰ ĐỘNG</h4>
+                <p class="subtitle-tag" style="margin-top: 2px;">Thiết bị phần cứng công nghiệp kết nối thời gian thực</p>
+            </div>
+            <div class="gateway-status">
+                <i class="la la-wifi"></i>
+                <span>GATEWAY ONLINE</span>
+            </div>
+        </div>
+
+        <div class="gateway-details">
+            <div class="gw-item">Hardware Model: <strong>iTes_106 (Teslateq)</strong></div>
+            <div class="gw-item">Giao thức truyền thông: <strong>Modbus RTU (RS485 Master)</strong></div>
+            <div class="gw-item">Tín hiệu di động: <strong>4G LTE (Viettel Network)</strong></div>
+            <div class="gw-item">Chu kỳ cập nhật dữ liệu: <strong>30 giây / lần</strong></div>
+        </div>
+    </div>
+
+</body>
+</html>

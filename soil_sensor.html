@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soil & Water Separated Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/line-awesome/1.3.0/line-awesome/css/line-awesome.min.css">
+    
+    <style>
+        :root {
+            --bg-body: #161a20;
+            --bg-card: #22272e;
+            --bg-card-hover: #2b3038;
+            --text-main: #fcfcfd;
+            --text-secondary: #94a3b8;
+            --primary-accent: #3b82f6;
+            
+            /* Màu định danh phân khu */
+            --soil-accent: #fbbf24;  /* Vàng đất */
+            --water-accent: #38bdf8; /* Xanh nước */
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow: hidden;
+        }
+
+        /* --- BỐ CỤC CHÍNH CHIA LÀM 2 PHÂN KHU --- */
+        .main-container {
+            flex: 11;
+            display: grid;
+            grid-template-columns: 1fr 2.2fr;
+            gap: 20px;
+        }
+
+        /* --- THIẾT KẾ KHUNG TỔNG (ZONE PANEL) --- */
+        .zone-panel {
+            background-color: rgba(34, 39, 46, 0.4);
+            border-radius: 20px;
+            padding: 24px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+        }
+
+        /* Khung Đất - Viền vàng mờ */
+        .zone-panel.soil-zone {
+            border: 1px solid rgba(251, 191, 36, 0.15);
+            background: linear-gradient(180deg, rgba(251, 191, 36, 0.03) 0%, transparent 100%);
+        }
+
+        /* Khung Nước - Viền xanh mờ */
+        .zone-panel.water-zone {
+            border: 1px solid rgba(56, 189, 248, 0.15);
+            background: linear-gradient(180deg, rgba(56, 189, 248, 0.03) 0%, transparent 100%);
+        }
+
+        /* Tiêu đề phân khu lớn */
+        .zone-header {
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .soil-zone .zone-header { color: var(--soil-accent); }
+        .water-zone .zone-header { color: var(--water-accent); }
+
+        /* Lưới bài trí bên trong mỗi phân khu */
+        .zone-grid {
+            flex: 1;
+            display: grid;
+            gap: 20px;
+        }
+        .soil-zone .zone-grid { grid-template-columns: 1fr; } 
+        .water-zone .zone-grid { grid-template-columns: repeat(2, 1fr); } 
+
+
+        /* --- THẺ WIDGET CẢM BIẾN (TỐI ƯU CĂN GIỮA TO RÕ) --- */
+        .card-widget {
+            background-color: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            transition: background-color 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            height: 100%;
+        }
+        .card-widget:hover { background-color: var(--bg-card-hover); }
+
+        .widget-top { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start; 
+            z-index: 2; 
+            width: 100%;
+        }
+        .card-widget .title { margin: 0; font-size: 16px; font-weight: 600; color: var(--text-main); }
+        .card-widget .subtitle-tag { font-size: 12px; color: var(--text-secondary); margin: 4px 0 0 0; }
+
+        /* Khối hiển thị số - Đẩy vào trung tâm card */
+        .value-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2;
+            margin-top: -10px; /* Bù trừ khoảng trống trần */
+        }
+
+        .card-widget .sensor-value {
+            font-family: 'Montserrat', sans-serif;
+            font-size: clamp(45px, 5.5vh, 64px); /* Phóng to cỡ số cực đại */
+            font-weight: 700;
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        .card-widget .sensor-unit { 
+            font-size: 22px; /* Phóng to đơn vị đo */
+            font-weight: 500; 
+            color: var(--text-secondary); 
+            margin-left: 8px; 
+        }
+
+        /* Định danh màu sắc Icon cho Phân khu Đất */
+        .soil-zone i { color: var(--soil-accent); font-size: 24px; }
+        .soil-zone .widget-illustration { stroke: var(--soil-accent); }
+
+        /* Định danh màu sắc Icon cho Phân khu Nước */
+        .water-zone i { color: var(--water-accent); font-size: 24px; }
+        .water-zone .widget-illustration { stroke: var(--water-accent); }
+        .water-zone .purple-item i { color: #c084fc; } 
+        .water-zone .purple-item .widget-illustration { stroke: #c084fc; }
+
+        /* Họa tiết ảnh chìm SVG */
+        .widget-illustration {
+            position: absolute;
+            right: 20px;
+            bottom: 16px;
+            width: clamp(70px, 9vh, 110px);
+            height: clamp(70px, 9vh, 110px);
+            opacity: 0.12;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            pointer-events: none;
+        }
+        .card-widget:hover .widget-illustration { opacity: 0.25; transform: scale(1.05); }
+
+
+        /* --- BANNER PHẦN CỨNG Ở ĐÁY MÀN HÌNH --- */
+        .gateway-banner {
+            flex: 2.2;
+            background: linear-gradient(135deg, #1e2530 0%, #22272e 100%);
+            border-radius: 16px;
+            padding: 24px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border: 1px solid rgba(59, 130, 246, 0.1);
+        }
+        .gateway-header { display: flex; justify-content: space-between; align-items: center; }
+        .gateway-status {
+            display: flex; align-items: center; gap: 8px;
+            background-color: rgba(16, 185, 129, 0.1); color: #10b981;
+            padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500;
+        }
+        .gateway-details { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+        .gw-item { font-size: 14px; color: var(--text-secondary); }
+        .gw-item strong { color: var(--text-main); font-family: 'Montserrat', sans-serif; }
+
+        @media (max-width: 1024px) {
+            .main-container { grid-template-columns: 1fr; }
+            .gateway-details { grid-template-columns: repeat(2, 1fr); }
+            body { overflow-y: auto; height: auto; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        
+        <div class="zone-panel soil-zone">
+            <div class="zone-header">
+                <i class="la la-seedling"></i> III. Trạm Cảm Biến Đất
+            </div>
+            <div class="zone-grid">
+                <div class="card-widget">
+                    <div class="widget-top">
+                        <div>
+                            <h4 class="title">Nhiệt Độ Đất</h4>
+                            <p class="subtitle-tag">Renke Modbus</p>
+                        </div>
+                        <i class="la la-thermometer-three-quarters"></i>
+                    </div>
+                    <div class="value-container">
+                        <div class="sensor-value" id="soil-temp">24.2<span class="sensor-unit">°C</span></div>
+                    </div>
+                    <svg class="widget-illustration" viewBox="0 0 24 24" fill="none" stroke-width="1.2"><path d="M2 20h20M4 16h16M7 12h10"/></svg>
+                </div>
+                <div class="card-widget">
+                    <div class="widget-top">
+                        <div>
+                            <h4 class="title">Độ Ẩm Đất</h4>
+                            <p class="subtitle-tag">Renke Probe</p>
+                        </div>
+                        <i class="la la-water"></i>
+                    </div>
+                    <div class="value-container">
+                        <div class="sensor-value" id="soil-humi">45.8<span class="sensor-unit">%</span></div>
+                    </div>
+                    <svg class="widget-illustration" viewBox="0 0 24 24" fill="none" stroke-width="1.2"><path d="M12 22V10M12 10a5 5 0 0 1 5-5h2M12 14a5 5 0 0 0-5-5H5"/></svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="zone-panel water-zone">
+            <div class="zone-header">
+                <i class="la la-tint"></i> IV. Trạm Chất Lượng Nước
+            </div>
+            <div class="zone-grid">
+                <div class="card-widget purple-item">
+                    <div class="widget-top">
+                        <div>
+                            <h4 class="title">Độ pH Nước</h4>
+                            <p class="subtitle-tag">Thang đo 0.0 - 14.0</p>
+                        </div>
+                        <i class="la la-flask"></i>
+                    </div>
+                    <div class="value-container">
+                        <div class="sensor-value" id="water-ph">6.8<span class="sensor-unit">pH</span></div>
+                    </div>
+                    <svg class="widget-illustration" viewBox="0 0 24 24" fill="none" stroke-width="1.2"><path d="M6 3h12M10 3v15a2 2 0 0 0 4 0V3M14 12h-4"/></svg>
+                </div>
+
+                <div class="card-widget">
+                    <div class="widget-top">
+                        <div>
+                            <h4 class="title">Nhiệt Độ Nước</h4>
+                            <p class="subtitle-tag">Renke Liquid</p>
+                        </div>
+                        <i class="la la-temperature-low"></i>
+                    </div>
+                    <div class="value-container">
+                        <div class="sensor-value" id="water-temp">27.5<span class="sensor-unit">°C</span></div>
+                    </div>
+                    <svg class="widget-illustration" viewBox="0 0 24 24" fill="none" stroke-width="1.2"><path d="M12 22a5 5 0 0 0 5-5c0-4-5-9-5-9s-5 5-5 9a5 5 0 0 0 5 5z"/></svg>
+                </div>
+
+                <div class="card-widget">
+                    <div class="widget-top">
+                        <div>
+                            <h4 class="title">Độ Đục Của Nước</h4>
+                            <p class="subtitle-tag">Turbidity Sensor</p>
+                        </div>
+                        <i class="la la-eye-slash"></i>
+                    </div>
+                    <div class="value-container">
+                        <div class="sensor-value" id="water-turb">12.5<span class="sensor-unit">NTU</span></div>
+                    </div>
+                    <svg class="widget-illustration" viewBox="0 0 24 24" fill="none" stroke-width="1.2"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1"/></svg>
+                </div>
+
+                <div class="card-widget">
+                    <div class="widget-top">
+                        <div>
+                            <h4 class="title">Oxy Hòa Tan (DO)</h4>
+                            <p class="subtitle-tag">Dissolved Oxygen</p>
+                        </div>
+                        <i class="la la-wind"></i>
+                    </div>
+                    <div class="value-container">
+                        <div class="sensor-value" id="water-do">7.4<span class="sensor-unit">mg/L</span></div>
+                    </div>
+                    <svg class="widget-illustration" viewBox="0 0 24 24" fill="none" stroke-width="1.2"><circle cx="12" cy="7" r="3"/><circle cx="6" cy="14" r="2"/><circle cx="16" cy="16" r="4"/></svg>
+                </div>
+
+                <div class="card-widget" style="grid-column: span 2;">
+                    <div class="widget-top">
+                        <div>
+                            <h4 class="title">Độ Dẫn Điện & Độ Mặn (EC)</h4>
+                            <p class="subtitle-tag">Electrical Conductivity</p>
+                        </div>
+                        <i class="la la-bolt"></i>
+                    </div>
+                    <div class="value-container">
+                        <div class="sensor-value" id="water-ec">1420<span class="sensor-unit">µS/cm</span></div>
+                    </div>
+                    <svg class="widget-illustration" style="width: 90px;" viewBox="0 0 24 24" fill="none" stroke-width="1.2"><path d="M2 12h3l3-9 4 18 3-13 2 4h5"/></svg>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="gateway-banner">
+        <div class="gateway-header">
+            <div>
+                <h4 class="title" style="color: var(--primary-accent); font-weight: 600; font-size: 15px; margin:0;">BỘ THU THẬP DỮ LIỆU ĐẤT & CHẤT LƯỢNG NƯỚC TRUNG TÂM</h4>
+                <p class="subtitle-tag" style="margin-top: 2px;">Trạm giám sát nông nghiệp và quản lý nguồn nước thông minh</p>
+            </div>
+            <div class="gateway-status">
+                <i class="la la-wifi"></i>
+                <span>GATEWAY ONLINE</span>
+            </div>
+        </div>
+
+        <div class="gateway-details">
+            <div class="gw-item">Mã thiết bị: <strong>iTes_106 (Teslateq)</strong></div>
+            <div class="gw-item">Nguồn hoạt động: <strong>Solar Power + Battery Backup</strong></div>
+            <div class="gw-item">Chuẩn kết nối: <strong>Modbus RTU RS485 Master</strong></div>
+            <div class="gw-item">Truyền dữ liệu đám mây: <strong>Mạng di động 4G LTE</strong></div>
+        </div>
+    </div>
+
+</body>
+</html>

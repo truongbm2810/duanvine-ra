@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống SCADA Giám Sát Trung Tâm IoT</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/line-awesome/1.3.0/line-awesome/css/line-awesome.min.css">
+    
+    <style>
+        :root {
+            --bg-sidebar: rgba(30, 35, 42, 0.85); /* Làm trong suốt nhẹ nền menu */
+            --bg-main: #161a20;
+            --active-color: #3b82f6; 
+            --text-muted: #64748b;
+            --text-light: #fcfcfd;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-light);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- THANH ĐIỀU HƯỚNG NỔI BO GÓC (STYLE FLUID/FLOATING) --- */
+        .sidebar {
+            width: 76px;
+            background-color: var(--bg-sidebar);
+            backdrop-filter: blur(10px); /* Tạo hiệu ứng mờ kính cao cấp */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            box-sizing: border-box;
+            margin: 12px 0 12px 12px; /* Đẩy cách lề tạo khối nổi */
+            border-radius: 20px; /* Bo tròn góc mạnh mẽ giống ảnh mẫu */
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            justify-content: space-between;
+            z-index: 10;
+        }
+
+        .logo-area {
+            font-size: 24px;
+            color: var(--active-color);
+            text-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+        }
+
+        .nav-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            flex: 1;
+            justify-content: center; 
+        }
+
+        .nav-item {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.23s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .nav-item:hover {
+            color: var(--text-light);
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-item.active {
+            color: var(--text-light);
+            background-color: var(--active-color);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+        }
+
+        .nav-item i {
+            font-size: 22px;
+        }
+
+        /* Tooltip khi di chuột vào nút */
+        .nav-item .tooltip {
+            position: absolute;
+            left: 74px;
+            background-color: #1e232a;
+            color: var(--text-light);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            transform: translateX(-5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .nav-item:hover .tooltip {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .bottom-area {
+            display: flex;
+            flex-direction: column;
+        }
+        .bottom-item {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ef4444;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .bottom-item:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        /* --- KHU VỰC HIỂN THỊ IFRAME NỘI DUNG CHÍNH --- */
+        .content-frame-container {
+            flex: 1;
+            height: 100vh;
+            position: relative;
+            background-color: var(--bg-main);
+            padding: 12px; /* Tạo khoảng trống đồng bộ với menu nổi */
+            box-sizing: border-box;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 16px; /* Bo tròn góc phần hiển thị biểu đồ */
+            box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+            transition: opacity 0.15s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="logo-area">
+            <i class="la la-cube"></i>
+        </div>
+
+        <div class="nav-menu">
+            <div class="nav-item active" onclick="switchDashboard('indoor.html', this)">
+                <i class="la la-home"></i>
+                <div class="tooltip">I. Khu vực Trong Nhà</div>
+            </div>
+
+            <div class="nav-item" onclick="switchDashboard('outdoor_air.html', this)">
+                <i class="la la-cloud-sun"></i>
+                <div class="tooltip">II. Trạm Khí Tượng Ngoài Trời</div>
+            </div>
+
+            <div class="nav-item" onclick="switchDashboard('soil_sensor.html', this)">
+                <i class="la la-layer-group"></i>
+                <div class="tooltip">III & IV. Giám sát Đất & Nước Trung tâm</div>
+            </div>
+
+            <div class="nav-item" onclick="switchDashboard('system_status.html', this)">
+                <i class="la la-server"></i>
+                <div class="tooltip">V. Thông Số Hệ Thống (NOC)</div>
+            </div>
+        </div>
+
+        <div class="bottom-area">
+            <div class="bottom-item" title="Đăng xuất hệ thống" onclick="alert('Đang đóng phiên làm việc SCADA!')">
+                <i class="la la-sign-out-alt"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-frame-container">
+        <iframe id="scada-iframe" src="indoor.html"></iframe>
+    </div>
+
+    <script>
+        function switchDashboard(pageUrl, element) {
+            const activeItem = document.querySelector('.nav-item.active');
+            if (activeItem) {
+                activeItem.classList.remove('active');
+            }
+            
+            element.classList.add('active');
+            
+            const iframe = document.getElementById('scada-iframe');
+            iframe.style.opacity = 0;
+            
+            setTimeout(() => {
+                iframe.src = pageUrl;
+                iframe.style.opacity = 1;
+            }, 120);
+        }
+    </script>
+
+</body>
+</html>

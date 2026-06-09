@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Diagnostic & Gateway Control Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/line-awesome/1.3.0/line-awesome/css/line-awesome.min.css">
+    
+    <style>
+        :root {
+            --bg-body: #161a20;
+            --bg-card: #22272e;
+            --bg-card-hover: #2b3038;
+            --text-main: #fcfcfd;
+            --text-secondary: #94a3b8;
+            --primary-accent: #3b82f6; /* Xanh Lam chẩn đoán hệ thống */
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow: hidden;
+        }
+
+        /* --- TIÊU ĐỀ LỚN KHU VỰC --- */
+        .page-header {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .page-header h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: 0.5px; color: var(--primary-accent); }
+        .page-header p { margin: 4px 0 0 0; font-size: 13px; color: var(--text-secondary); }
+
+        /* --- BỐ CỤC LƯỚI CHÍNH --- */
+        .system-layout {
+            flex: 11;
+            display: grid;
+            grid-template-columns: 1.8fr 1.2fr; /* Khối Gateway trái, Khối tài nguyên phải */
+            gap: 20px;
+            min-height: 0;
+        }
+
+        /* --- PHÂN KHU THIẾT BỊ GATEWAY (TRÁI) --- */
+        .gateway-management {
+            background-color: rgba(34, 39, 46, 0.3);
+            border: 1px solid rgba(59, 130, 246, 0.12);
+            border-radius: 20px;
+            padding: 24px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .panel-title {
+            font-size: 15px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Danh sách hàng Gateway */
+        .gateway-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            flex: 1;
+            justify-content: center;
+        }
+        .gateway-row-card {
+            background-color: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px 24px;
+            display: grid;
+            grid-template-columns: 1.8fr 1fr 1.2fr;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            transition: background-color 0.2s ease;
+        }
+        .gateway-row-card:hover { background-color: var(--bg-card-hover); border-color: rgba(59, 130, 246, 0.15); }
+
+        .gw-info-side { display: flex; align-items: center; gap: 16px; }
+        .gw-info-side i { font-size: 32px; color: var(--primary-accent); background: rgba(59, 130, 246, 0.1); padding: 12px; border-radius: 12px; }
+        .gw-info-side h4 { margin: 0; font-size: 16px; font-weight: 600; }
+        .gw-info-side p { margin: 4px 0 0 0; font-size: 12px; color: var(--text-secondary); }
+
+        /* Đèn LED nhảy trạng thái động */
+        .gw-status-side { display: flex; justify-content: center; }
+        .led-badge {
+            padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .led-badge.online { background-color: rgba(16, 185, 129, 0.12); color: var(--success-color); }
+        .led-badge.online::before {
+            content: ''; width: 8px; height: 8px; border-radius: 50%;
+            background-color: var(--success-color); box-shadow: 0 0 10px var(--success-color);
+            animation: blink 2s infinite;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* Khu vực hiển thị vạch sóng 4G RSSI */
+        .gw-signal-side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+        .signal-wrapper { display: flex; align-items: baseline; gap: 6px; }
+        .signal-dbm { font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-main); }
+        .signal-bars { display: flex; align-items: flex-end; gap: 3px; height: 16px; width: 24px; }
+        .bar { width: 3px; background-color: #4b5563; border-radius: 1px; }
+        /* Cấu hình vạch sóng cao dựa trên chất lượng mạng */
+        .bar.fill { background-color: var(--success-color); box-shadow: 0 0 4px rgba(16, 185, 129, 0.4); }
+        .bar-1 { height: 25%; } .bar-2 { height: 50%; } .bar-3 { height: 75%; } .bar-4 { height: 100%; }
+
+
+        /* --- PHÂN KHU TÀI NGUYÊN HỆ THỐNG (PHẢI) --- */
+        .system-resources {
+            display: grid;
+            grid-template-rows: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        /* Thẻ Widget đồng bộ căn giữa to rõ */
+        .card-widget {
+            background-color: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            transition: background-color 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            height: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+        }
+        .card-widget:hover { background-color: var(--bg-card-hover); border-color: rgba(59, 130, 246, 0.15); }
+
+        .widget-top { display: flex; justify-content: space-between; align-items: flex-start; z-index: 2; width: 100%; }
+        .card-widget .title { margin: 0; font-size: 15px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .card-widget .subtitle-tag { font-size: 12px; color: #64748b; margin: 4px 0 0 0; }
+
+        /* Khối hiển thị số - Đẩy vào trung tâm card */
+        .value-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2;
+            margin-top: -5px;
+        }
+        .card-widget .sensor-value {
+            font-family: 'Montserrat', sans-serif;
+            font-size: clamp(40px, 5vh, 56px); /* Phóng lớn đồng bộ phòng vận hành */
+            font-weight: 700;
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        .card-widget .sensor-unit { font-size: 20px; font-weight: 500; color: var(--text-secondary); margin-left: 6px; }
+
+        .card-widget i { font-size: 24px; }
+        .card-widget i.la-clock { color: #38bdf8; }
+        .card-widget i.la-hdd { color: #a855f7; }
+        .card-widget i.la-battery-three-quarters { color: #fbbf24; }
+
+        /* Họa tiết mạng lưới chìm hình ảnh SVG */
+        .widget-illustration {
+            position: absolute; right: 20px; bottom: 16px;
+            width: clamp(70px, 8.5vh, 100px); height: clamp(70px, 8.5vh, 100px);
+            opacity: 0.08; stroke: var(--primary-accent);
+            transition: opacity 0.2s ease, transform 0.2s ease; pointer-events: none;
+        }
+        .card-widget:hover .widget-illustration { opacity: 0.18; transform: scale(1.05); }
+
+        @media (max-width: 1024px) {
+            .system-layout { grid-template-columns: 1fr; }
+            .gateway-row-card { grid-template-columns: 1fr; gap: 15px; text-align: center; justify-content: center; }
+            .gw-info-side { flex-direction: column; }
+            .gw-signal-side { align-items: center; }
+            body { overflow-y: auto; height: auto; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="page-header">
+        <h2>V. CÁC THÔNG SỐ CHUNG CHO HỆ THỐNG</h2>
+        <p>Hệ thống giám sát trạng thái truyền thông và chẩn đoán sức khỏe phần cứng thiết bị IoT Gateway</p>
+    </div>
+
+    <div class="system-layout">
+        
+        <div class="gateway-management">
+            <div class="panel-title">
+                <i class="la la-server" style="font-size: 18px; color: var(--primary-accent);"></i> Trạng thái kết nối phần cứng trung tâm
+            </div>
+            
+            <div class="gateway-list">
+                
+                <div class="gateway-row-card">
+                    <div class="gw-info-side">
+                        <i class="la la-broadcast-tower"></i>
+                        <div>
+                            <h4>IoT Gateway iTes_106</h4>
+                            <p>Phụ trách: Trạm Ngoài Trời, Trạm Đất & Trạm Nước</p>
+                        </div>
+                    </div>
+                    <div class="gw-status-side">
+                        <span class="led-badge online">ONLINE</span>
+                    </div>
+                    <div class="gw-signal-side">
+                        <div class="signal-wrapper">
+                            <span class="signal-dbm">-68</span>
+                            <span style="font-size:12px; color:var(--text-secondary);">dBm</span>
+                        </div>
+                        <div class="signal-bars" title="Tín hiệu Tốt (Excellent)">
+                            <div class="bar bar-1 fill"></div>
+                            <div class="bar bar-2 fill"></div>
+                            <div class="bar bar-3 fill"></div>
+                            <div class="bar bar-4 fill"></div>
+                        </div>
+                        <span style="font-size:11px; color:var(--success-color); font-weight:500;">Mạng 4G LTE (Viettel)</span>
+                    </div>
+                </div>
+
+                <div class="gateway-row-card">
+                    <div class="gw-info-side">
+                        <i class="la la-home"></i>
+                        <div>
+                            <h4>IoT Gateway iTes_104.3</h4>
+                            <p>Phụ trách: Môi trường trong nhà & Thiết bị An toàn</p>
+                        </div>
+                    </div>
+                    <div class="gw-status-side">
+                        <span class="led-badge online">ONLINE</span>
+                    </div>
+                    <div class="gw-signal-side">
+                        <div class="signal-wrapper">
+                            <span class="signal-dbm">-75</span>
+                            <span style="font-size:12px; color:var(--text-secondary);">dBm</span>
+                        </div>
+                        <div class="signal-bars" title="Tín hiệu Ổn định (Good)">
+                            <div class="bar bar-1 fill"></div>
+                            <div class="bar bar-2 fill"></div>
+                            <div class="bar bar-3 fill"></div>
+                            <div class="bar bar-4"></div>
+                        </div>
+                        <span style="font-size:11px; color:var(--primary-accent); font-weight:500;">Mạng Cục bộ (WiFi Mesh)</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="system-resources">
+            
+            <div class="card-widget">
+                <div class="widget-top">
+                    <div>
+                        <h4 class="title">Thời gian hoạt động liên tục</h4>
+                        <p class="subtitle-tag">System Up-time</p>
+                    </div>
+                    <i class="la la-clock"></i>
+                </div>
+                <div class="value-container">
+                    <div class="sensor-value" id="sys-uptime" style="font-size: clamp(32px, 4.2vh, 48px);">24<span class="sensor-unit">Ngày</span>12<span class="sensor-unit">Giờ</span></div>
+                </div>
+                <svg class="widget-illustration" viewBox="0 0 24 24" fill="none" stroke-width="1.2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+
+            <div class="card-widget">
+                <div class="widget-top">
+                    <div>
+                        <h4 class="title">Bộ nhớ đệm Gateway</h4>
+                        <p class="subtitle-tag">Dữ liệu lưu trữ tạm thời</p>
+                    </div>
+                    <i class="la la-hdd"></i>
+                </div>
+                <div class="value-container">
+                    <div class="sensor-value" id="sys-memory">14.8<span class="sensor-unit">MB / 32MB</span></div>
+                </div>
+                <svg class="widget-illustration" viewBox="0 0 24 24" fill="none" stroke-width="1.2"><path d="M22 12H2M22 6H2M22 18H2"/></svg>
+            </div>
+
+            <div class="card-widget">
+                <div class="widget-top">
+                    <div>
+                        <h4 class="title">Nguồn Pin Solar dự phòng</h4>
+                        <p class="subtitle-tag">iTes_106 Battery Voltage</p>
+                    </div>
+                    <i class="la la-battery-three-quarters"></i>
+                </div>
+                <div class="value-container">
+                    <div class="sensor-value" id="sys-battery">12.6<span class="sensor-unit">VDC</span></div>
+                </div>
+                <svg class="widget-illustration" viewBox="0 0 24 24" fill="none" stroke-width="1.2"><rect x="1" y="6" width="18" height="12" rx="2"/><path d="M23 11v2"/></svg>
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+</html>

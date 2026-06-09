@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indoor Monitoring & Control Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/line-awesome/1.3.0/line-awesome/css/line-awesome.min.css">
+    
+    <style>
+        :root {
+            --bg-body: #161a20;
+            --bg-card: #22272e;
+            --bg-card-hover: #2b3038;
+            --text-main: #fcfcfd;
+            --text-secondary: #94a3b8;
+            --primary-accent: #3b82f6;
+            --indoor-accent: #10b981; /* Tông màu xanh lục cho môi trường trong nhà */
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow: hidden;
+        }
+
+        /* --- TIÊU ĐỀ LỚN KHU VỰC --- */
+        .page-header {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .page-header h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: 0.5px; }
+        .page-header p { margin: 4px 0 0 0; font-size: 13px; color: var(--text-secondary); }
+
+        /* --- BỐ CỤC CHÍNH CHIA LƯỚI PHỨC HỢP --- */
+        .main-layout {
+            flex: 9;
+            display: grid;
+            grid-template-columns: 1.3fr 2.7fr; /* Khối Cảnh báo trái, khối Thông số phải */
+            gap: 20px;
+            min-height: 0;
+        }
+
+        .right-column {
+            display: grid;
+            grid-template-rows: 1.2fr 1fr;
+            gap: 20px;
+        }
+
+        .environment-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        /* --- THỂ WIDGET CẢM BIẾN --- */
+        .card-widget {
+            background-color: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            transition: background-color 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            height: 100%;
+            border: 1px solid rgba(16, 185, 129, 0.04);
+        }
+        .card-widget:hover { 
+            background-color: var(--bg-card-hover);
+            border-color: rgba(16, 185, 129, 0.15);
+        }
+
+        .widget-top { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start; 
+            z-index: 2; 
+            width: 100%;
+        }
+        .card-widget .title { margin: 0; font-size: 16px; font-weight: 600; color: var(--text-main); }
+        .card-widget .subtitle-tag { font-size: 12px; color: var(--text-secondary); margin: 4px 0 0 0; }
+
+        /* Khối hiển thị số - Đẩy vào trung tâm card */
+        .value-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2;
+            margin-top: -5px;
+        }
+
+        .card-widget .sensor-value {
+            font-family: 'Montserrat', sans-serif;
+            font-size: clamp(45px, 5.5vh, 64px); /* Số siêu to */
+            font-weight: 700;
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        .card-widget .sensor-unit { 
+            font-size: 22px; 
+            font-weight: 500; 
+            color: var(--text-secondary); 
+            margin-left: 8px; 
+        }
+
+        /* Cấu trúc hiển thị đa thông số (Khí độc / Bụi mịn) */
+        .multi-value-row {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            width: 100%;
+            gap: 15px;
+        }
+        .multi-item {
+            text-align: center;
+        }
+        .multi-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+        }
+        .multi-num {
+            font-family: 'Montserrat', sans-serif;
+            font-size: clamp(28px, 3.8vh, 40px);
+            font-weight: 700;
+            color: var(--text-main);
+        }
+        .multi-unit {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-left: 4px;
+        }
+
+        /* --- DANH SÁCH AN TOÀN & CẢNH BÁO --- */
+        .safety-panel {
+            background-color: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            border: 1px solid rgba(239, 68, 68, 0.05);
+        }
+        .safety-title {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #f87171; /* Đỏ nhạt an toàn */
+        }
+        .safety-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            flex: 1;
+            justify-content: center;
+        }
+        .safety-item {
+            background-color: rgba(22, 26, 32, 0.6);
+            padding: 18px 20px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255,255,255,0.02);
+        }
+        .safety-info h5 { margin: 0; font-size: 15px; font-weight: 500; }
+        .safety-info p { margin: 4px 0 0 0; font-size: 12px; color: var(--text-secondary); }
+        
+        /* Badge LED trạng thái */
+        .status-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .status-badge.alert { background-color: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+        .status-badge.safe { background-color: rgba(16, 185, 129, 0.15); color: #10b981; }
+        .status-badge::before {
+            content: ''; width: 8px; height: 8px; border-radius: 50%;
+            background-color: currentColor; box-shadow: 0 0 8px currentColor;
+        }
+
+        /* --- KHỐI APTOMAT NGUỒN TỔNG --- */
+        .power-card {
+            background-color: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            border: 1px solid rgba(59, 130, 246, 0.1);
+        }
+        .power-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .power-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            flex: 1;
+            align-items: center;
+        }
+
+        /* Công tắc Toggle Switch thông minh */
+        .switch {
+            position: relative; display: inline-block; width: 50px; height: 26px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #4b5563; transition: .3s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px;
+            background-color: white; transition: .3s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--primary-accent); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        /* Màu sắc Icon */
+        .card-widget i { font-size: 24px; }
+        .card-widget i.la-thermometer-half { color: #ef4444; }
+        .card-widget i.la-tint { color: #38bdf8; }
+        .card-widget i.la-sun { color: #f59e0b; }
+        .card-widget i.la-cloud { color: #a7f3d0; }
+        .card-widget i.la-wind { color: #cbd5e1; }
+
+        /* Họa tiết chìm SVG */
+        .widget-illustration {
+            position: absolute; right: 20px; bottom: 16px;
+            width: clamp(70px, 9vh, 100px); height: clamp(70px, 9vh, 100px);
+            opacity: 0.12; stroke: var(--indoor-accent);
+            transition: opacity 0.2s ease, transform 0.2s ease; pointer-events: none;
+        }
+        .card-widget:hover .widget-illustration { opacity: 0.25; transform: scale(1.05); }
+
+        /* --- BANNER PHẦN CỨNG --- */
+        .gateway-banner {
+            flex: 2.2;
+            background: linear-gradient(135deg, #1e2530 0%, #22272e 100%);
+            border-radius: 16px;
+            padding: 24px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border: 1px solid rgba(59, 130, 246, 0.1);
+        }
+        .gateway-header { display: flex; justify-content: space-between; align-items: center; }
+        .gateway-status {
+            display: flex; align-items: center; gap: 8px;
+            background-color: rgba(16, 185, 129, 0.1); color: #10b981;
+            padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500;
+        }
+        .gateway-details { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+        .gw-item { font-size: 14px; color: var(--text-secondary); }
+        .gw-item strong { color: var(--text-main); font-family: 'Montserrat', sans-serif; }
+    </style>
+</head>
+<body>
+
+    <div class="page-header">
+        <h2>I. KHU VỰC TRONG NHÀ</h2>
+        <p>Hệ thống đo lường không khí Modbus RTU & thiết bị mạng Zigbee công nghiệp</p>
+    </div>
+
+    <div class="main-layout">
+        
+        <div class="safety-panel">
+            <div class="safety-title">
+                <i class="la la-shield-alt" style="font-size: 22px;"></i> An Toàn & Cảnh Báo
+            </div>
+            <div class="safety-list">
+                <div class="safety-item">
+                    <div class="safety-info">
+                        <h5>Cảm biến hiện diện</h5>
+                        <p>Aqara Zigbee</p>
+                    </div>
+                    <div class="status-badge alert" id="ss-presence">Có người</div>
+                </div>
+                <div class="safety-item">
+                    <div class="safety-info">
+                        <h5>Rò rỉ khí gas</h5>
+                        <p>Tuya Smart</p>
+                    </div>
+                    <div class="status-badge safe" id="ss-gas">An toàn</div>
+                </div>
+                <div class="safety-item">
+                    <div class="safety-info">
+                        <h5>Cảm biến báo khói</h5>
+                        <p>Tuya Smart</p>
+                    </div>
+                    <div class="status-badge safe" id="ss-smoke">An toàn</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-column">
+            
+            <div class="environment-grid">
+                <div class="card-widget">
+                    <div class="widget-top">
+                        <div>
+                            <h4 class="title">Nhiệt Độ</h4>
+                            <p class="subtitle-tag">Modbus Renke</p>
+                        </div>
+                        <i class="la la-thermometer-half"></i>
+                    </div>
+                    <div class="value-container">
+                        <div class="sensor-value" id="in-temp">26.5<span class="sensor-unit">°C</span></div>
+                    </div>
+                    <svg class="widget-illustration" viewBox="0 0 24 24" fill="none" stroke-width="1.2"><path d="M12 2v20M17 5H7M15 11H9"/></svg>
+                </div>
+
+                <div class="card-widget">
+                    <div class="widget-top">
+                        <div>
+                            <h4 class="title">Độ Ẩm</h4>
+                            <p class="subtitle-tag">Không khí phòng</p>
+                        </div>
+                        <i class="la la-tint"></i>
+                    </div>
+                    <div class="value-container">
+                        <div class="sensor-value" id="in-humi">62.0<span class="sensor-unit">%</span></div>
+                    </div>
+                    <svg class="widget-illustration" viewBox="0 0 24 24" fill="none" stroke-width="1.2"><path d="M12 22a7 7 0 0 0 7-7c0-4.3-7-13-7-13S5 11 5 15a7 7 0 0 0 7 7z"/></svg>
+                </div>
+
+                <div class="card-widget">
+                    <div class="widget-top">
+                        <div>
+                            <h4 class="title">Áh Sáng</h4>
+                            <p class="subtitle-tag">Lux Meter</p>
+                        </div>
+                        <i class="la la-sun"></i>
+                    </div>
+                    <div class="value-container">
+                        <div class="sensor-value" id="in-lux">350<span class="sensor-unit">Lux</span></div>
+                    </div>
+                    <svg class="widget-illustration" viewBox="0 0 24 24" fill="none" stroke-width="1.2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M1 12h2M21 12h2"/></svg>
+                </div>
+
+                <div class="card-widget">
+                    <div class="widget-top">
+                        <div>
+                            <h4 class="title">Khí Độc Hại</h4>
+                            <p class="subtitle-tag">CO₂ & VOC Sensor</p>
+                        </div>
+                        <i class="la la-cloud"></i>
+                    </div>
+                    <div class="value-container">
+                        <div class="multi-value-row">
+                            <div class="multi-item">
+                                <div class="multi-label">CO₂</div>
+                                <div class="multi-num" id="in-co2">450<span class="multi-unit">ppm</span></div>
+                            </div>
+                            <div class="multi-item">
+                                <div class="multi-label">VOC</div>
+                                <div class="multi-num" id="in-voc">120<span class="multi-unit">ppb</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <svg class="widget-illustration" viewBox="0 0 24 24" fill="none" stroke-width="1.2"><path d="M19 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/></svg>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px;">
+                <div class="card-widget">
+                    <div class="widget-top">
+                        <div>
+                            <h4 class="title">Mật Độ Bụi Mịn</h4>
+                            <p class="subtitle-tag">Renke Laser PM Sensor</p>
+                        </div>
+                        <i class="la la-wind"></i>
+                    </div>
+                    <div class="value-container">
+                        <div class="multi-value-row">
+                            <div class="multi-item">
+                                <div class="multi-label">PM2.5</div>
+                                <div class="multi-num" id="in-pm25">15<span class="multi-unit">µg/m³</span></div>
+                            </div>
+                            <div class="multi-item">
+                                <div class="multi-label">PM10</div>
+                                <div class="multi-num" id="in-pm10">28<span class="multi-unit">µg/m³</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="power-card">
+                    <div class="power-header">
+                        <div>
+                            <h4 class="title" style="margin:0; font-size:16px; font-weight:600;">⚡ Aptomat Nguồn Tổng</h4>
+                            <p class="subtitle-tag" style="color:var(--primary-accent); margin:4px 0 0 0;">Tuya Zigbee <span style="color:#64748b; margin-left:8px;">Định mức: 63A</span></p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" checked id="main-breaker-switch">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="power-metrics">
+                        <div class="multi-item">
+                            <div class="multi-label">Công Suất</div>
+                            <div class="multi-num" id="p-power" style="color: var(--primary-accent);">4.2<span class="multi-unit">kW</span></div>
+                        </div>
+                        <div class="multi-item">
+                            <div class="multi-label">Dòng Điện</div>
+                            <div class="multi-num" id="p-current">18.5<span class="multi-unit">A</span></div>
+                        </div>
+                        <div class="multi-item">
+                            <div class="multi-label">Điện Áp</div>
+                            <div class="multi-num" id="p-voltage">224<span class="multi-unit">V</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="gateway-banner">
+        <div class="gateway-header">
+            <div>
+                <h4 class="title" style="color: var(--primary-accent); font-weight: 600; font-size: 15px; margin:0;">BỘ ĐIỀU KHIỂN TRUNG TÂM & THU THẬP DỮ LIỆU TRONG NHÀ</h4>
+                <p class="subtitle-tag" style="margin-top: 2px;">Quản lý lưới thiết bị Zigbee mesh và cảm biến môi trường vi khí hậu</p>
+            </div>
+            <div class="gateway-status">
+                <i class="la la-wifi"></i>
+                <span>ZIGBEE & MODBUS ONLINE</span>
+            </div>
+        </div>
+
+        <div class="gateway-details">
+            <div class="gw-item">Bộ điều khiển: <strong>SOLA - Việt Nam (Zigbee)</strong></div>
+            <div class="gw-item">IoT Gateway phụ trợ: <strong>iTes_104.3 (Teslateq)</strong></div>
+            <div class="gw-item">Kết nối cục bộ: <strong>WiFi 2.4GHz + RS485 Master</strong></div>
+            <div class="gw-item">Phụ tải giám sát: <strong>Hệ thống điện tòa nhà phòng điều hành</strong></div>
+        </div>
+    </div>
+
+</body>
+</html>

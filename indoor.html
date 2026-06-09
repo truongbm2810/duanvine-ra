@@ -16,10 +16,10 @@
             --border-color: rgba(255, 255, 255, 0.03);
             
             /* Màu sắc đại diện từng phân khu dữ liệu */
-            --color-temp: #ef4444; /* Đỏ ấm áp */
-            --color-humi: #3b82f6; /* Xanh nước biển */
-            --color-light: #eab308; /* Vàng nắng */
-            --color-gas: #10b981; /* Xanh lá an toàn */
+            --color-temp: #ef4444; 
+            --color-humi: #3b82f6; 
+            --color-light: #eab308; 
+            --color-gas: #10b981; 
         }
 
         body {
@@ -156,11 +156,6 @@
             background-color: rgba(16, 185, 129, 0.12);
             color: #10b981;
         }
-        
-        .status-badge.warning {
-            background-color: rgba(239, 68, 68, 0.12);
-            color: #ef4444;
-        }
 
         .dot {
             width: 6px;
@@ -291,31 +286,42 @@
     </div>
 
     <script>
-        // Lắng nghe sự kiện truyền thông điệp thời gian thực từ nền tảng E-Ra
         window.addEventListener('message', function(event) {
             const eraData = event.data;
+            if (!eraData) return;
+
+            // KIỂU 1: E-Ra gửi gói tin update đơn lẻ của từng chân ảo
+            if (eraData.type === 'UPDATE_VIRTUAL_PIN' || eraData.pin) {
+                if (eraData.pin === 'V1') updateTemp(eraData.value);
+                if (eraData.pin === 'V2') updateHumi(eraData.value);
+            } 
             
-            // Xác thực dữ liệu gửi đến thuộc cấu trúc cập nhật Chân ảo (Virtual Pin)
-            if (eraData && eraData.type === 'UPDATE_VIRTUAL_PIN') {
-                
-                // 1. Kiểm tra nếu nhận được dữ liệu từ chân V1 (Nhiệt độ)
-                if (eraData.pin === 'V1') {
-                    const tempElement = document.getElementById('indoor-temp');
-                    if (tempElement) {
-                        // Định dạng lấy 1 chữ số thập phân và chèn lại cấu trúc đơn vị
-                        tempElement.innerHTML = parseFloat(eraData.value).toFixed(1) + "<span>°C</span>";
-                    }
-                }
-                
-                // 2. Kiểm tra nếu nhận được dữ liệu từ chân V2 (Độ ẩm)
-                if (eraData.pin === 'V2') {
-                    const humiElement = document.getElementById('indoor-humi');
-                    if (humiElement) {
-                        humiElement.innerHTML = parseFloat(eraData.value).toFixed(1) + "<span>%</span>";
-                    }
-                }
+            // KIỂU 2: E-Ra truyền nguyên cụm JSON đối tượng chứa danh sách chân dữ liệu {V1: XX, V2: YY}
+            if (typeof eraData === 'object') {
+                // Check hoa thường đề phòng hệ thống tự chuyển đổi kí tự đầu
+                if (eraData.V1 !== undefined) updateTemp(eraData.V1);
+                if (eraData.V2 !== undefined) updateHumi(eraData.V2);
+                if (eraData.v1 !== undefined) updateTemp(eraData.v1);
+                if (eraData.v2 !== undefined) updateHumi(eraData.v2);
             }
         });
+
+        // Hàm xử lý hiển thị & tự động làm tròn số Nhiệt Độ
+        function updateTemp(val) {
+            const tempElement = document.getElementById('indoor-temp');
+            if (tempElement && val !== null && val !== undefined) {
+                // Chuyển chuỗi thô thành số thực, lấy 1 chữ số thập phân gọn gàng
+                tempElement.innerHTML = parseFloat(val).toFixed(1) + "<span>°C</span>";
+            }
+        }
+
+        // Hàm xử lý hiển thị & tự động làm tròn số Độ Ẩm
+        function updateHumi(val) {
+            const humiElement = document.getElementById('indoor-humi');
+            if (humiElement && val !== null && val !== undefined) {
+                humiElement.innerHTML = parseFloat(val).toFixed(1) + "<span>%</span>";
+            }
+        }
     </script>
 
 </body>

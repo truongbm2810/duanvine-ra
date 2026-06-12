@@ -249,7 +249,7 @@
         .icon-temp { color: var(--color-warning); }
         .icon-humi { color: var(--color-accent); }
         .icon-light { color: #eab308; }
-        .icon-fan { color: var(--color-accent); }
+        .icon-fan { color: #3b82f6; }
     </style>
 </head>
 <body>
@@ -351,7 +351,7 @@
                     <h3 class="card-title">Quạt Máy Phòng Ngủ</h3>
                     <p class="card-subtitle">Điều khiển Smart Socket</p>
                 </div>
-                <i class="la la-fan card-icon icon-accent"></i>
+                <i class="la la-fan card-icon icon-fan"></i>
             </div>
             <div class="power-flex" style="margin-top: 35px;">
                 <span class="status-label" style="font-size: 14px;">Trạng thái quạt</span>
@@ -407,56 +407,61 @@
     <script>
         const era = new EraWidget();
         let actions = [];
-        let configTemp, configHumi, configLight, configFan;
+        let realtimeConfigs = []; 
 
         era.init({
             onConfiguration: (c) => {
+                // Lưu toàn bộ danh sách Action và Datastreams nhận được từ Cloud
                 actions = c.actions || [];
-                
-                // Đồng bộ mảng Datastream dựa trên thứ tự kéo thả trong cài đặt Widget của bạn
-                configTemp  = c.realtime_configs[0];  // Dòng 1: Nhiệt độ (V1)
-                configHumi  = c.realtime_configs[1];  // Dòng 2: Độ ẩm (V2)
-                configLight = c.realtime_configs[2];  // Dòng 3: Đèn phòng ngủ (V3)
-                configFan   = c.realtime_configs[3];  // Dòng 4: Quạt máy (V4)
+                realtimeConfigs = c.realtime_configs || []; 
             },
             onValues: (v) => {
-                // Cập nhật Nhiệt độ
+                // 1. Tự động tìm chân Nhiệt độ thông qua tên gán hoặc ký hiệu chân (Ví dụ: V1)
+                const configTemp = realtimeConfigs.find(c => c.name === 'V1' || c.pin === 'V1' || c.name?.toLowerCase().includes('nhiệt độ'));
                 if (configTemp && v[configTemp.id]) {
                     let tempVal = parseFloat(v[configTemp.id].value).toFixed(1);
                     document.getElementById('t').innerHTML = tempVal + "<span>°C</span>";
                 }
-                // Cập nhật Độ ẩm
+                
+                // 2. Tự động tìm chân Độ ẩm (Ví dụ: V2)
+                const configHumi = realtimeConfigs.find(c => c.name === 'V2' || c.pin === 'V2' || c.name?.toLowerCase().includes('độ ẩm'));
                 if (configHumi && v[configHumi.id]) {
                     let humiVal = Math.round(v[configHumi.id].value);
                     document.getElementById('h').innerHTML = humiVal + "<span>%</span>";
                 }
 
-                // Cập nhật trạng thái các nút gạt đồng bộ thời gian thực
+                // 3. Tự động tìm chân Đèn để đồng bộ nút gạt từ thiết bị thực tế về web (Ví dụ: led_den hoặc V3)
+                const configLight = realtimeConfigs.find(c => c.pin === 'led_den' || c.pin === 'V3' || c.name?.toLowerCase().includes('đèn'));
                 if (configLight && v[configLight.id]) {
                     document.getElementById('sw-light').checked = (v[configLight.id].value == 1);
                 }
+
+                // 4. Tự động tìm chân Quạt để đồng bộ nút gạt (Ví dụ: V4)
+                const configFan = realtimeConfigs.find(c => c.pin === 'V4' || c.name?.toLowerCase().includes('quạt'));
                 if (configFan && v[configFan.id]) {
                     document.getElementById('sw-fan').checked = (v[configFan.id].value == 1);
                 }
             }
         });
 
-        // Hàm phát lệnh điều khiển thông minh tự tìm kiếm theo Tên Action
+        // Hàm phát lệnh Action điều khiển phần cứng dựa trên Tên khớp chính xác 100% với ERa Cloud
         async function triggerAction(el, type) {
             let actionName = "";
+
             if (type === 'light') {
                 actionName = el.checked ? "bật Led đèn" : "tắt Led đèn";
             } else if (type === 'fan') {
                 actionName = el.checked ? "bật led quạt" : "tắt led quạt";
             }
             
+            // Tìm kiếm đối tượng Action khớp chuỗi ký tự đặt trên Cloud
             const act = actions.find(a => a.name === actionName);
             
             if (act) {
-                console.log(`[SCADA] Thực thi Action: "${actionName}"`);
+                console.log(`[ERa Widget] Thực thi thành công: "${actionName}"`);
                 await era.triggerAction(act.action, null);
             } else {
-                console.error(`[SCADA] Không tìm thấy tên hành động "${actionName}" trên ERa.`);
+                console.error(`[ERa Widget] Không tìm thấy hành động tên "${actionName}" trên Cloud.`);
             }
         }
     </script>

@@ -286,7 +286,7 @@
             <div class="card-header">
                 <div>
                     <h3 class="card-title">Nhiệt Độ</h3>
-                    <p class="card-subtitle">Modbus Renke</p>
+                    <p class="card-subtitle">Chân V1</p>
                 </div>
                 <i class="la la-thermometer-half card-icon icon-temp"></i>
             </div>
@@ -297,7 +297,7 @@
             <div class="card-header">
                 <div>
                     <h3 class="card-title">Độ Ẩm</h3>
-                    <p class="card-subtitle">Không khí phòng</p>
+                    <p class="card-subtitle">Chân V2</p>
                 </div>
                 <i class="la la-tint card-icon icon-humi"></i>
             </div>
@@ -312,7 +312,7 @@
             <div class="card-header">
                 <div>
                     <h3 class="card-title">Mật Độ Bụi Mịn</h3>
-                    <p class="card-subtitle">Renke Laser PM Sensor</p>
+                    <p class="card-subtitle">Chân V5 / V6</p>
                 </div>
                 <i class="la la-cloud card-icon"></i>
             </div>
@@ -332,7 +332,7 @@
             <div class="card-header">
                 <div>
                     <h3 class="card-title">Đèn Phòng Ngủ</h3>
-                    <p class="card-subtitle">Điều khiển Relay</p>
+                    <p class="card-subtitle">Chân GPIO 12</p>
                 </div>
                 <i class="la la-lightbulb card-icon icon-light"></i>
             </div>
@@ -349,7 +349,7 @@
             <div class="card-header">
                 <div>
                     <h3 class="card-title">Quạt Máy Phòng Ngủ</h3>
-                    <p class="card-subtitle">Điều khiển Smart Socket</p>
+                    <p class="card-subtitle">Chân GPIO 13</p>
                 </div>
                 <i class="la la-fan card-icon icon-fan"></i>
             </div>
@@ -411,40 +411,39 @@
 
         era.init({
             onConfiguration: (c) => {
-                // Lưu toàn bộ danh sách Action và Datastreams nhận được từ Cloud
                 actions = c.actions || [];
                 realtimeConfigs = c.realtime_configs || []; 
             },
             onValues: (v) => {
-                // 1. Tự động tìm chân Nhiệt độ thông qua tên gán hoặc ký hiệu chân (Ví dụ: V1)
-                const configTemp = realtimeConfigs.find(c => c.name === 'V1' || c.pin === 'V1' || c.name?.toLowerCase().includes('nhiệt độ'));
+                // 1. Tìm chính xác cấu hình dựa trên ký hiệu pin 'V1' trong ảnh của bạn
+                const configTemp = realtimeConfigs.find(c => c.pin === 'V1');
                 if (configTemp && v[configTemp.id]) {
                     let tempVal = parseFloat(v[configTemp.id].value).toFixed(1);
                     document.getElementById('t').innerHTML = tempVal + "<span>°C</span>";
                 }
                 
-                // 2. Tự động tìm chân Độ ẩm (Ví dụ: V2)
-                const configHumi = realtimeConfigs.find(c => c.name === 'V2' || c.pin === 'V2' || c.name?.toLowerCase().includes('độ ẩm'));
+                // 2. Tìm chính xác cấu hình dựa trên ký hiệu pin 'V2'
+                const configHumi = realtimeConfigs.find(c => c.pin === 'V2');
                 if (configHumi && v[configHumi.id]) {
                     let humiVal = Math.round(v[configHumi.id].value);
                     document.getElementById('h').innerHTML = humiVal + "<span>%</span>";
                 }
 
-                // 3. Tự động tìm chân Đèn để đồng bộ nút gạt từ thiết bị thực tế về web (Ví dụ: led_den hoặc V3)
-                const configLight = realtimeConfigs.find(c => c.pin === 'led_den' || c.pin === 'V3' || c.name?.toLowerCase().includes('đèn'));
+                // 3. Đồng bộ nút gạt Đèn thông qua định dạng chân cứng 'GPIO 12'
+                const configLight = realtimeConfigs.find(c => c.pin === 'GPIO 12' || c.pin === 'V3');
                 if (configLight && v[configLight.id]) {
                     document.getElementById('sw-light').checked = (v[configLight.id].value == 1);
                 }
 
-                // 4. Tự động tìm chân Quạt để đồng bộ nút gạt (Ví dụ: V4)
-                const configFan = realtimeConfigs.find(c => c.pin === 'V4' || c.name?.toLowerCase().includes('quạt'));
+                // 4. Đồng bộ nút gạt Quạt thông qua định dạng chân cứng 'GPIO 13'
+                const configFan = realtimeConfigs.find(c => c.pin === 'GPIO 13' || c.pin === 'V4');
                 if (configFan && v[configFan.id]) {
                     document.getElementById('sw-fan').checked = (v[configFan.id].value == 1);
                 }
             }
         });
 
-        // Hàm phát lệnh Action điều khiển phần cứng dựa trên Tên khớp chính xác 100% với ERa Cloud
+        // Hàm phát lệnh Action điều khiển phần cứng dựa trên Tên hiển thị trên ERa Cloud
         async function triggerAction(el, type) {
             let actionName = "";
 
@@ -454,14 +453,13 @@
                 actionName = el.checked ? "bật led quạt" : "tắt led quạt";
             }
             
-            // Tìm kiếm đối tượng Action khớp chuỗi ký tự đặt trên Cloud
             const act = actions.find(a => a.name === actionName);
             
             if (act) {
-                console.log(`[ERa Widget] Thực thi thành công: "${actionName}"`);
+                console.log(`[ERa SCADA] Gửi lệnh thành công: "${actionName}"`);
                 await era.triggerAction(act.action, null);
             } else {
-                console.error(`[ERa Widget] Không tìm thấy hành động tên "${actionName}" trên Cloud.`);
+                console.error(`[ERa SCADA] Không tìm thấy Action tên là "${actionName}" trên Cloud.`);
             }
         }
     </script>

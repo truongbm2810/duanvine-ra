@@ -249,7 +249,7 @@
         .icon-temp { color: var(--color-warning); }
         .icon-humi { color: var(--color-accent); }
         .icon-light { color: #eab308; }
-        .icon-gas { color: var(--color-safe); }
+        .icon-fan { color: #3b82f6; }
     </style>
 </head>
 <body>
@@ -351,7 +351,7 @@
                     <h3 class="card-title">Quạt Máy Phòng Ngủ</h3>
                     <p class="card-subtitle">Điều khiển Smart Socket</p>
                 </div>
-                <i class="la la-fan card-icon icon-accent"></i>
+                <i class="la la-fan card-icon icon-fan"></i>
             </div>
             <div class="power-flex" style="margin-top: 35px;">
                 <span class="status-label" style="font-size: 14px;">Trạng thái quạt</span>
@@ -411,27 +411,29 @@
 
         era.init({
             onConfiguration: (c) => {
+                // Lưu danh sách toàn bộ các Action có trên ERa Cloud
                 actions = c.actions || [];
                 
-                // Áp cấu trúc mảng cấu hình tương tự code mẫu của bạn
-                configTemp  = c.realtime_configs[0];  // Dòng 1 trên web E-Ra: Nhiệt độ
-                configHumi  = c.realtime_configs[1];  // Dòng 2 trên web E-Ra: Độ ẩm
-                configLight = c.realtime_configs[2];  // Dòng 3 trên web E-Ra: Đèn
-                configFan   = c.realtime_configs[3];  // Dòng 4 trên web E-Ra: Quạt
+                // Đồng bộ mảng cấu hình nhận dữ liệu thời gian thực (Realtime Datastream)
+                configTemp  = c.realtime_configs[0];  // Vị trí 1: Nhiệt độ (V1)
+                configHumi  = c.realtime_configs[1];  // Vị trí 2: Độ ẩm (V2)
+                configLight = c.realtime_configs[2];  // Vị trí 3: Luồng trạng thái Đèn (V3)
+                configFan   = c.realtime_configs[3];  // Vị trí 4: Luồng trạng thái Quạt (V4)
             },
             onValues: (v) => {
-                // Cập nhật Nhiệt độ
+                // Cập nhật giá trị hiển thị Nhiệt độ
                 if (configTemp && v[configTemp.id]) {
                     let tempVal = parseFloat(v[configTemp.id].value).toFixed(1);
                     document.getElementById('t').innerHTML = tempVal + "<span>°C</span>";
                 }
-                // Cập nhật Độ ẩm
+                
+                // Cập nhật giá trị hiển thị Độ ẩm
                 if (configHumi && v[configHumi.id]) {
                     let humiVal = Math.round(v[configHumi.id].value);
                     document.getElementById('h').innerHTML = humiVal + "<span>%</span>";
                 }
 
-                // Cập nhật trạng thái các công tắc điều khiển
+                // Cập nhật ngược trạng thái Switch khi nhấn nút cứng ngoài đời
                 if (configLight && v[configLight.id]) {
                     document.getElementById('sw-light').checked = (v[configLight.id].value == 1);
                 }
@@ -441,16 +443,25 @@
             }
         });
 
-        // Hàm gửi Action điều khiển lên E-Ra khi click gạt công tắc
+        // Hàm phát lệnh Action điều khiển phần cứng dựa trên tên cấu hình
         async function triggerAction(el, type) {
-            let act = null;
-            if(type === 'light') act = el.checked ? actions[0] : actions[1];
-            if(type === 'fan') act = el.checked ? actions[2] : actions[3];
+            let actionName = "";
+
+            // Phân tích trạng thái toggle để khớp chính xác String Name trong Action của ERa
+            if (type === 'light') {
+                actionName = el.checked ? "bật Led đèn" : "tắt Led đèn";
+            } else if (type === 'fan') {
+                actionName = el.checked ? "bật led quạt" : "tắt led quạt";
+            }
             
-            if(act) {
+            // Tìm kiếm đối tượng Action khớp tên
+            const act = actions.find(a => a.name === actionName);
+            
+            if (act) {
+                console.log(`[ERa Widget] Kích hoạt Action thành công: "${actionName}"`);
                 await era.triggerAction(act.action, null);
             } else {
-                console.error("Không tìm thấy cấu hình Action tương ứng trên E-Ra!");
+                console.error(`[ERa Widget] Lỗi: Không tồn tại hành động tên "${actionName}" trên Cloud.`);
             }
         }
     </script>
